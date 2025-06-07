@@ -1,0 +1,2 @@
+# STM32F103C8T6_IoT_AirSensor
+STM32 IoT MQTT CO2, Air Quality sensor: SCD41 + SGP40
