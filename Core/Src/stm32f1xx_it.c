@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ESP8266.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -206,7 +207,20 @@ void SysTick_Handler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
+	// 20 milliseconds
+	if(timeout != 0 && timeout < 10)
+		timeout++;
 
+	if(timeout > 2)
+	{
+		timeout = 0;
+		messageHandlerFlag = 1;
+	}
+
+	if(esp_state == ESP_Connected)
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1);
+	else if(esp_state == ESP_Disconnected)
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 0);
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
@@ -220,7 +234,9 @@ void TIM2_IRQHandler(void)
 void TIM3_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM3_IRQn 0 */
-
+	// 1 second
+	seconds++;
+	no_activity_counter++;
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
   /* USER CODE BEGIN TIM3_IRQn 1 */
@@ -234,7 +250,25 @@ void TIM3_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
+	timeout = 1;
 
+	if(buffer_index < 2000)
+	{
+		HAL_UART_Receive(&huart2, &buffer[buffer_index++], 1, 10);
+	}
+	else
+	{
+		HAL_UART_Receive(&huart2, &buffer[1999], 1, 10);
+	}
+
+	if(buffer_index > 5)
+	{
+		if(buffer[buffer_index-4] == '\r' && buffer[buffer_index-3] == '\n' && buffer[buffer_index-2] == '\r' && buffer[buffer_index-1] == '\n')
+		{
+			messageHandlerFlag = 1;
+			timeout = 0;
+		}
+	}
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */

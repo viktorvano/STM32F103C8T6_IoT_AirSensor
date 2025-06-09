@@ -22,6 +22,7 @@ typedef enum {
 } ESP_State;
 
 extern UART_HandleTypeDef huart2;
+extern I2C_HandleTypeDef hi2c1;
 
 extern uint32_t seconds;
 extern uint8_t buffer[2000];

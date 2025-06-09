@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ESP8266.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -105,7 +105,13 @@ int main(void)
   MX_IWDG_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Base_Start_IT(&htim2);// 20 ms
+  HAL_TIM_Base_Start_IT(&htim3);// 1 s
+  __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+	//WatchDog set to 6.5472 seconds
+	IWDG->KR = 0xAAAA;//Reset WatchDog
+	IWDG->KR = 0xCCCC;//Start WatchDog
+  ESP_Server_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -115,6 +121,29 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  IWDG->KR = 0xAAAA;//Reset WatchDog
+
+	  if(messageHandlerFlag)
+	  {
+		  IWDG->KR = 0xAAAA;//Reset WatchDog
+		  messageHandler();
+		  messageHandlerFlag = 0;
+		  timeout = 0;
+		  no_activity_counter = 0;
+	  }
+
+	  if(no_activity_counter > 20
+		&& esp_state == ESP_Connected)
+	  {
+		  IWDG->KR = 0xAAAA;//Reset WatchDog
+		  HAL_UART_Transmit(&huart2, (uint8_t*)"AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"), 100);
+		  esp_state = ESP_Disconnected;//until message handler confirms
+		  HAL_Delay(500);
+	  }else if(esp_state == ESP_Disconnected
+			  && no_activity_counter > 30)
+	  {
+		  ESP_Server_Init();
+	  }
   }
   /* USER CODE END 3 */
 }
